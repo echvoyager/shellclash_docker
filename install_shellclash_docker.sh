@@ -5,18 +5,19 @@
 echo -e "\e[1;31m \n如果安装过程中需要退出, 请Ctrl+C退出并运行uninstall_shellclash_docker.sh以重置环境\n \e[0m"
 
 # 读取用户输入信息
+> shellclash_docker.config
 echo -e "\033[1m请选择宿主机网络接口(请确定IP是宿主机LAN IP)\033[0m"
 ip_info=$(ip -o -4 a show scope global | awk '{split($4, a, "/"); printf("%d%s\n", NR, " - " $2 ": " a[1])}')
 echo -e "${ip_info}" && read -p $'\e[1;32m输入对应数字: ' interface_num && echo -en "\e[0m"
-host_interface=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($3, a, ":"); printf("%s\n", a[1])}') && echo $host_interface > host_interface
+host_interface=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($3, a, ":"); printf("%s\n", a[1])}') && echo "host_interface=$host_interface" >> shellclash_docker.config
 ip_range=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($4, a, "."); printf("%s\n", a[1] "." a[2] "." a[3] ".")}')
 echo -e "\033[1m\n请补全以下信息\033[0m"
-echo -en "\033[1m主网关IP\033[0m: \e[1;32m$ip_range" && read && gateway_ip="${ip_range}${REPLY}" && echo -en "\e[0m"
-echo -en "\033[1mShellClash旁路网关IP\033[0m (切勿与内网其他设备冲突!): \e[1;32m$ip_range" && read && container_ip="${ip_range}${REPLY}" && echo -en "\e[0m"
-echo -en "\033[1m中转IP\033[0m (用作容器向宿主机沟通, 切勿与内网其他设备冲突!): \e[1;32m$ip_range" && read && relay_ip="${ip_range}${REPLY}" && echo -en "\e[0m"
+echo -en "\033[1m主网关IP\033[0m: \e[1;32m$ip_range" && read && gateway_ip="${ip_range}${REPLY}" && echo -en "\e[0m" && echo "gateway_ip=$gateway_ip" >> shellclash_docker.config
+echo -en "\033[1mShellClash旁路网关IP\033[0m (切勿与内网其他设备冲突!): \e[1;32m$ip_range" && read && container_ip="${ip_range}${REPLY}" && echo -en "\e[0m" && echo "container_ip=$container_ip" >> shellclash_docker.config
+echo -en "\033[1m中转IP\033[0m (用作容器向宿主机沟通, 切勿与内网其他设备冲突!): \e[1;32m$ip_range" && read && relay_ip="${ip_range}${REPLY}" && echo -en "\e[0m" && echo "relay_ip=$relay_ip" >> shellclash_docker.config
 
 # 设置macvlan, 宿主机重启后需重新设置
-ifconfig $host_interface promisc
+ip link set $host_interface promisc on
 ip link add macvlan_host link $host_interface type macvlan mode bridge
 ip addr add $relay_ip dev macvlan_host
 ip link set macvlan_host up
