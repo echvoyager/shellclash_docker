@@ -25,17 +25,15 @@ ip route add $container_ip dev macvlan_host
 
 # Docker安装运行
 docker network create -d macvlan --subnet=$gateway_ip/24 --gateway=$gateway_ip -o parent=$host_interface macvlan
-docker run --restart always --name shellclash_docker -d --network macvlan --ip=$container_ip --privileged echvoyager/shellclash_docker
+docker run --restart=always --name=shellclash_docker --network=macvlan --ip=$container_ip --cap-add=NET_ADMIN -d echvoyager/shellclash_docker
 docker exec -it shellclash_docker sh -c "echo \"config interface 'lan'
-        option proto 'static'
-        option device 'eth0'
-        option ipaddr '$container_ip'
-        option netmask '255.255.255.0'
-        option gateway '$gateway_ip'
-        option dns '$gateway_ip'\" >> /etc/config/network"
+	option proto 'static'
+	option device 'eth0'
+	option ipaddr '$container_ip'
+	option netmask '255.255.255.0'
+	option gateway '$gateway_ip'
+	option dns '$gateway_ip'\" >> /etc/config/network"
 
-docker exec -it shellclash_docker sed -i "s/dns_nameserver=.*/dns_nameserver='192.168.31.1, 119.29.29.29, 223.5.5.5'/g" /etc/clash/mark 
-docker exec -it shellclash_docker sed -i "s|dns_fallback=.*|dns_fallback='tls://dns.pub:853, https://doh.pub/dns-query, tls://dns.alidns.com:853, https://dns.alidns.com/dns-query, tls://dns.rubyfish.cn:853, https://dns.rubyfish.cn/dns-query'|g" /etc/clash/mark
 docker exec -it shellclash_docker sh -l
 docker exec -it shellclash_docker sh -c "sed -i \"\$(( \$(wc -l </etc/profile)-2 ))d\" /etc/profile"
 
