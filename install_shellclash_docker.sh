@@ -10,6 +10,7 @@ echo -e "\033[1m请选择宿主机网络接口(请确定IP是宿主机LAN IP)\03
 ip_info=$(ip -o -4 a show scope global | awk '{split($4, a, "/"); printf("%d%s\n", NR, " - " $2 ": " a[1])}')
 echo -e "${ip_info}" && read -p $'\e[1;32m输入对应数字: ' interface_num && echo -en "\e[0m"
 host_interface=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($3, a, ":"); printf("%s\n", a[1])}') && echo "host_interface=$host_interface" >> shellclash_docker.config
+host_ip=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($4, a); printf("%s\n", a[1])}') && echo "host_ip=$host_ip" >> shellclash_docker.config
 ip_range=$(echo "${ip_info}" | awk 'NR=='$interface_num'{split($4, a, "."); printf("%s\n", a[1] "." a[2] "." a[3] ".")}')
 echo -e "\033[1m\n请补全以下信息\033[0m"
 echo -en "\033[1m主网关IP\033[0m: \e[1;32m$ip_range" && read && gateway_ip="${ip_range}${REPLY}" && echo -en "\e[0m" && echo "gateway_ip=$gateway_ip" >> shellclash_docker.config
@@ -33,7 +34,7 @@ docker exec -it shellclash_docker sh -c "echo \"config interface 'lan'
 	option netmask '255.255.255.0'
 	option gateway '$gateway_ip'
 	option dns '$gateway_ip'\" >> /etc/config/network"
-
+docker exec -it shellclash_docker sh -c "echo \"iptables -t nat -I OUTPUT -d $host_ip -j DNAT --to-destination $relay_ip\" >> /etc/firewall.user"
 docker exec -it shellclash_docker sh -l
 docker exec -it shellclash_docker sh -c "sed -i \"\$(( \$(wc -l </etc/profile)-2 ))d\" /etc/profile"
 

@@ -7,6 +7,7 @@
 # 设置变量
 host_interface="eth0"
 gateway_ip="192.168.31.1"
+host_ip="192.168.31.2"
 container_ip="192.168.31.3"
 relay_ip="192.168.31.4"
 
@@ -27,10 +28,10 @@ docker exec -it shellclash_docker sh -l
 # 容器Shell内运行
 > /etc/config/network
 echo -e "config interface 'loopback'
-\toption ifname 'lo'
 \toption proto 'static'
 \toption ipaddr '127.0.0.1'
 \toption netmask '255.0.0.0'
+\toption device 'lo'
 
 config interface 'lan'
 \toption proto 'static'
@@ -40,9 +41,9 @@ config interface 'lan'
 \toption gateway '192.168.31.1'
 \toption dns '192.168.31.1'" >> /etc/config/network
 uci set dhcp.lan.ignore=1
-uci commit dhcp
 uci set dhcp.lan.dhcpv6=disabled
 uci set dhcp.lan.ra=disabled
+uci set firewall.@include[0].reload='1'
 uci commit
 echo "iptables -t nat -I POSTROUTING -o eth0 -j MASQUERADE" >> /etc/firewall.user
 reboot
@@ -64,10 +65,10 @@ echo "clash" >> /etc/profile
 
 > /etc/config/network
 echo -e "config interface 'loopback'
-\toption ifname 'lo'
 \toption proto 'static'
 \toption ipaddr '127.0.0.1'
-\toption netmask '255.0.0.0'\n" >> /etc/config/network
+\toption netmask '255.0.0.0'
+\toption device 'lo'\n" >> /etc/config/network
 # 退出容器
 
 docker commit shellclash_docker echvoyager/shellclash_docker
